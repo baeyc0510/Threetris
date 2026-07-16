@@ -31,4 +31,5 @@
    * Do not push with conflict markers or verification failures.
 4. Run the relevant tests and `npm run build`.
 5. Use `workspace-coordination` to record changed scope, verification results, remaining work, and completion or handoff.
-6. Push only when the working tree and required checks are clean.
+6. Use the `save-chat-log` skill to export this session's conversation into `chat_logs/`, and stage the generated log with your commit.
+7. Push only when the working tree and required checks are clean.
