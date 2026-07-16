@@ -321,12 +321,13 @@ export class GameManager {
     return this.active?.type ?? null;
   }
 
-  /** Highest occupied layer including the active piece, for camera framing. */
+  /**
+   * Highest settled layer, for camera framing. Deliberately excludes the falling
+   * piece: a piece spawns near the top of the well, and following it would yank
+   * the camera up on every spawn and clip the floor out of view. The view should
+   * track the built stack instead, rising only as blocks actually lock in.
+   */
   effectiveStackHeight(): number {
-    let h = this.board.stackHeight();
-    if (this.active) {
-      for (const c of this.active.cells()) if (c.z > h) h = c.z;
-    }
-    return Math.min(h, VISIBLE_HEIGHT);
+    return Math.max(0, Math.min(this.board.stackHeight(), VISIBLE_HEIGHT));
   }
 }

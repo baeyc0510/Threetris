@@ -148,16 +148,24 @@ export class Renderer {
     this.disposeInstanced();
     const maxLocked = this.boardSize * this.boardSize * (VISIBLE_HEIGHT + 4);
 
+    // Instanced meshes derive their frustum-cull bounding sphere lazily from the
+    // instance matrices the first time they render, and never recompute it. With
+    // count = 0 at startup that sphere is degenerate/at the origin, so the whole
+    // mesh gets culled once the camera pans away from it and stacked blocks vanish.
+    // The well is always on screen, so disable per-mesh culling instead.
     this.lockedMesh = new THREE.InstancedMesh(this.boxGeo, this.lockedMat, maxLocked);
     this.lockedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.lockedMesh.frustumCulled = false;
     this.lockedMesh.count = 0;
     this.scene.add(this.lockedMesh);
 
     this.activeMesh = new THREE.InstancedMesh(this.boxGeo, this.activeMat, 8);
+    this.activeMesh.frustumCulled = false;
     this.activeMesh.count = 0;
     this.scene.add(this.activeMesh);
 
     this.ghostMesh = new THREE.InstancedMesh(this.boxGeo, this.ghostMat, 8);
+    this.ghostMesh.frustumCulled = false;
     this.ghostMesh.count = 0;
     this.scene.add(this.ghostMesh);
 
