@@ -5,7 +5,7 @@ export const VISIBLE_HEIGHT = 20; // visible play area (z 0..19)
 export const SPAWN_BUFFER = 4; // hidden buffer above the well
 export const BOARD_HEIGHT = VISIBLE_HEIGHT + SPAWN_BUFFER; // internal 24
 
-export const DEFAULT_BOARD_SIZE: BoardSize = 9;
+export const DEFAULT_BOARD_SIZE: BoardSize = 5;
 export const BOARD_SIZES: BoardSize[] = [5, 7, 9, 11];
 
 // --- Input feel ---
