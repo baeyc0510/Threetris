@@ -130,6 +130,7 @@ function frame(now: number): void {
   renderer.sync(game);
   renderer.render(dt);
   ui.updateHud();
+  ui.updateCompass(rig.getYaw());
 
   requestAnimationFrame(frame);
 }

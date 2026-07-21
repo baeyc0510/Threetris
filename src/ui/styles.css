@@ -312,6 +312,58 @@ body {
   height: 58px;
 }
 
+/* --- Movement compass --- */
+.compass {
+  position: relative;
+  width: 100%;
+  height: 92px;
+}
+.compass-rot {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+}
+/* Board footprint seen from above; its edges are the board axes. */
+.compass-board {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 42px;
+  height: 42px;
+  margin: -21px 0 0 -21px;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  background: rgba(24, 224, 255, 0.08);
+}
+.compass-arrow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--cyan);
+  text-shadow: 0 0 8px rgba(24, 224, 255, 0.6);
+}
+.ca-up {
+  transform: translate(-50%, -50%) translateY(-36px);
+}
+.ca-down {
+  transform: translate(-50%, -50%) translateY(36px);
+}
+.ca-left {
+  transform: translate(-50%, -50%) translateX(-36px);
+}
+.ca-right {
+  transform: translate(-50%, -50%) translateX(36px);
+}
+.compass-hint {
+  margin-top: 0.2rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  text-align: center;
+}
+
 .controls .ctrl-grid {
   display: grid;
   grid-template-columns: auto 1fr;

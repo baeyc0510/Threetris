@@ -6,7 +6,9 @@ const SETTINGS_KEY = "threetris.settings.v1";
 
 const DEFAULT_SETTINGS: Settings = {
   boardSize: DEFAULT_BOARD_SIZE,
-  cameraMode: "corner",
+  // Face by default: the board sits square to the screen, so the arrow keys
+  // move the piece along the screen axes instead of diagonally.
+  cameraMode: "face",
   sound: true,
 };
 

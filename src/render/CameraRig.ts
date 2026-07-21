@@ -16,12 +16,12 @@ import { VISIBLE_HEIGHT } from "../core/constants";
  */
 export class CameraRig {
   readonly camera: THREE.PerspectiveCamera;
-  private mode: CameraMode = "corner";
+  private mode: CameraMode = "face";
   private boardSize = 9;
 
-  private yawOffset = Math.PI / 4; // corner by default
-  private targetYaw = Math.PI / 4;
-  private currentYaw = Math.PI / 4;
+  private yawOffset = 0; // face by default; corner adds a 45-degree offset
+  private targetYaw = 0;
+  private currentYaw = 0;
 
   private targetLookY = 4;
   private currentLookY = 4;

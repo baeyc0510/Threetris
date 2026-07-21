@@ -3,6 +3,7 @@ import type { BoardSize, CameraMode, PieceType, Settings } from "../core/types";
 import { BOARD_SIZES, PIECE_COLORS } from "../core/constants";
 import { PIECE_OFFSETS } from "../core/pieces";
 import { getRecord, getTotalPlayTime } from "../core/storage";
+import { yawResidual } from "../core/orient";
 
 export interface UIHandlers {
   start(): void;
@@ -258,12 +259,30 @@ export class UI {
     nextPanel.appendChild(nextWrap);
     right.appendChild(nextPanel);
 
+    // Movement compass: shows where each arrow key sends the piece on screen.
+    const compassPanel = el("div", "panel compass-panel");
+    compassPanel.appendChild(el("div", "panel-title", "COMPASS"));
+    const compass = el("div", "compass");
+    compass.innerHTML = `
+      <div class="compass-rot">
+        <span class="compass-board"></span>
+        <span class="compass-arrow ca-up">↑</span>
+        <span class="compass-arrow ca-down">↓</span>
+        <span class="compass-arrow ca-left">←</span>
+        <span class="compass-arrow ca-right">→</span>
+      </div>`;
+    this.hudEls.compass = compass.querySelector<HTMLElement>(".compass-rot")!;
+    compassPanel.appendChild(compass);
+    compassPanel.appendChild(el("div", "compass-hint", "화면 기준 이동 방향"));
+    right.appendChild(compassPanel);
+
     const help = el("div", "panel controls");
     help.innerHTML = `
       <div class="panel-title">CONTROLS</div>
       <div class="ctrl-grid">
         <span>이동</span><b>← ↑ → ↓</b>
-        <span>회전</span><b>W A S D</b>
+        <span>눕히기</span><b>W / S</b>
+        <span>좌우 회전</span><b>A / D</b>
         <span>카메라</span><b>Q / E</b>
         <span>하드드롭</span><b>Space</b>
         <span>소프트</span><b>Shift</b>
@@ -526,6 +545,18 @@ export class UI {
       this.lastHold = this.game.holdType;
       drawMini(this.holdCanvas, this.game.holdType);
     }
+  }
+
+  /**
+   * Point the compass at the camera. Input quantizes the yaw to the nearest 90
+   * degrees before picking a board axis, so every arrow key is off screen-square
+   * by exactly the same residual angle (0 in face view, 45 in corner view).
+   * Rotating the whole widget by that residual therefore shows, for all four
+   * keys at once, which way the piece actually travels on screen.
+   */
+  updateCompass(yaw: number): void {
+    const deg = (yawResidual(yaw) * 180) / Math.PI;
+    this.hudEls.compass.style.transform = `rotate(${deg.toFixed(2)}deg)`;
   }
 
   showGameOver(newBestScore: boolean, newBestTime: boolean): void {

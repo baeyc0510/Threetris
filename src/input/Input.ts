@@ -1,6 +1,7 @@
 import type { GameManager } from "../core/GameManager";
 import type { CameraRig } from "../render/CameraRig";
 import { DAS_MS, ARR_MS } from "../core/constants";
+import { snappedYaw } from "../core/orient";
 
 /** Menu / overlay navigation, driven when the game is not in the playing state. */
 export interface MenuHandlers {
@@ -51,26 +52,67 @@ export class Input {
   }
 
   /**
+   * Camera-facing board axes, quantized to the nearest 90 degrees.
+   *
+   * The camera orbits in 90-degree snaps but *rests* on a diagonal in corner
+   * mode (yaw = 45, 135, ...). At an exact diagonal the raw forward/right board
+   * vectors are 45-45, so snapping "the dominant axis" is a coin-flip that used
+   * to collapse all four arrows onto a single board axis (the other axis became
+   * unreachable). Rounding the yaw to a multiple of 90 first (`snappedYaw`,
+   * which also settles the corner-mode tie the same way every time) makes
+   * `fwd`/`right` exact unit board axes, so the four arrows always map to four
+   * distinct board directions regardless of the resting camera angle.
+   */
+  private boardAxes(): { fwd: { x: number; y: number }; right: { x: number; y: number } } {
+    const yaw = snappedYaw(this.rig.getYaw());
+    const fwd = { x: -Math.sin(yaw), y: -Math.cos(yaw) };
+    const right = { x: -fwd.y, y: fwd.x };
+    // Round away tiny float error so components are exactly -1/0/1.
+    return {
+      fwd: { x: Math.round(fwd.x), y: Math.round(fwd.y) },
+      right: { x: Math.round(right.x), y: Math.round(right.y) },
+    };
+  }
+
+  /**
    * Map an arrow intent (forward/right in screen space) to board (dx,dy) using
-   * the camera yaw. Forward = into the screen; right = screen-right.
+   * the quantized camera facing. Forward = into the screen; right = screen-right.
    */
   private mapToBoard(intentDx: number, intentDy: number): { dx: number; dy: number } {
-    const yaw = this.rig.getYaw();
-    // Forward (into screen) in board space.
-    const fwd = { x: -Math.sin(yaw), y: -Math.cos(yaw) };
-    // Screen-right = camera right = cross(forward, up) projected to the board.
-    const right = { x: -fwd.y, y: fwd.x };
-    // Combine intent: dy = forward amount, dx = right amount.
-    const vx = fwd.x * intentDy + right.x * intentDx;
-    const vy = fwd.y * intentDy + right.y * intentDx;
-    // Snap to the dominant board axis.
-    if (Math.abs(vx) >= Math.abs(vy)) return { dx: Math.sign(vx) || 0, dy: 0 };
-    return { dx: 0, dy: Math.sign(vy) || 0 };
+    const { fwd, right } = this.boardAxes();
+    // Axes are orthogonal unit board vectors, so the result is already exactly
+    // one board step in a single direction.
+    return {
+      dx: fwd.x * intentDy + right.x * intentDx,
+      dy: fwd.y * intentDy + right.y * intentDx,
+    };
   }
 
   private moveDir(state: DirState): void {
     const { dx, dy } = this.mapToBoard(state.dx, state.dy);
     if (dx !== 0 || dy !== 0) this.game.move(dx, dy);
+  }
+
+  /**
+   * Tumble the piece around the screen-horizontal axis (camera-right), choosing
+   * the board rotation axis and direction from the current facing so the same
+   * key always tips the piece the same way relative to what the player sees.
+   * `forward` true tips the top away from the camera (into the screen).
+   */
+  private tumble(forward: boolean): void {
+    const { fwd, right } = this.boardAxes();
+    // Screen-right maps to whichever board axis it aligns with.
+    const axis: "x" | "y" = Math.abs(right.x) >= Math.abs(right.y) ? "x" : "y";
+    const rSign = axis === "x" ? Math.sign(right.x) : Math.sign(right.y);
+    // A right-hand rotation about the +axis by dir=+1 moves the top (+z) toward
+    // (rvec x z_up); `rSign` selects the rotation about the actual screen-right
+    // vector, which moves the top toward that cross product.
+    const rvec = axis === "x" ? { x: rSign, y: 0 } : { x: 0, y: rSign };
+    const rXz = { x: rvec.y, y: -rvec.x };
+    const towardFwd = rXz.x * fwd.x + rXz.y * fwd.y >= 0 ? 1 : -1;
+    let dir = (rSign * towardFwd) as 1 | -1;
+    if (!forward) dir = -dir as 1 | -1;
+    this.game.rotate(axis, dir);
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
@@ -141,15 +183,19 @@ export class Input {
         break;
       }
       case "KeyW":
-        if (!e.repeat) this.game.rotate("x", 1);
-        break;
-      case "KeyA":
-        if (!e.repeat) this.game.rotate("y", 1);
+        // Tumble the top away from the camera (into the screen).
+        if (!e.repeat) this.tumble(true);
         break;
       case "KeyS":
+        // Tumble the top toward the camera.
+        if (!e.repeat) this.tumble(false);
+        break;
+      case "KeyA":
+        // Spin left about the vertical axis (view-independent).
         if (!e.repeat) this.game.rotate("z", 1);
         break;
       case "KeyD":
+        // Spin right about the vertical axis (view-independent).
         if (!e.repeat) this.game.rotate("z", -1);
         break;
       case "KeyQ":
